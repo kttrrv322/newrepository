@@ -1,62 +1,11 @@
 import sqlite3
 import sys
-import io
 
-from PyQt6 import uic
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QApplication
-from main_form import Ui_Form
-from addEditCoffeeForm import Ui_Dialog
-from PyQt6.QtWidgets import QWidget, QMainWindow, QTableWidgetItem
-
-
-class NewWidget(QWidget):
-    def __init__(self):
-        super(NewWidget, self).__init__()
-        self.ui = Ui_Dialog()
-        self.ui.setupUi(self)
-        self.con = sqlite3.connect("coffee.sqlite")
-        self.pushButton.clicked.connect(self.add_item)
-        self.pushButton_2.clicked.connect(self.edit_item)
-
-    def add_item(self):
-        if self.textEdit.toPlainText():
-            cur = self.con.cursor()
-            try:
-                elements = list(map(lambda x: x.strip(), self.textEdit.toPlainText().split(sep='_')))
-                elements[-1] = int(elements[-1])
-                elements[-2] = int(elements[-2])
-                elements[0] = int(elements[0])
-                elements = tuple(elements)
-                if len(elements) == 7 and elements[0] in list(
-                        map(lambda x: x[0], cur.execute('''SELECT id FROM coffe WHERE name LIKE "%"''').fetchall())):
-                    raise BufferError
-                cur.execute('''INSERT INTO coffe VALUES (?, ?, ?, ?, ?, ?, ?)''', elements)
-                self.con.commit()
-            except BufferError:
-                self.textEdit.setText('Такой индекс уже существует')
-            except Exception:
-                self.textEdit.setText('Ошибка ввода')
-
-    def edit_item(self):
-        if self.textEdit.toPlainText():
-            cur = self.con.cursor()
-            try:
-                elements = list(map(lambda x: x.strip(), self.textEdit.toPlainText().split(sep='_')))
-                elements[-1] = int(elements[-1])
-                elements[-2] = int(elements[-2])
-                elements[0] = int(elements[0])
-                elements = tuple(elements)
-                if len(elements) == 7 and elements[0] not in list(
-                        map(lambda x: x[0], cur.execute('''SELECT id FROM coffe WHERE name LIKE "%"''').fetchall())):
-                    raise BufferError
-                cur.execute('''DELETE FROM coffe WHERE id = ?''', (elements[0], ))
-                cur.execute('''INSERT INTO coffe VALUES (?, ?, ?, ?, ?, ?, ?)''', elements)
-                self.con.commit()
-            except BufferError:
-                self.textEdit.setText('Такого индекса не существует')
-            except Exception:
-                self.textEdit.setText('Ошибка ввода')
+from release.main_form import Ui_Form
+from release.addEditCoffeeForm import Ui_Dialog
+from PyQt6.QtWidgets import QWidget, QTableWidgetItem
 
 
 class MyWidget(QWidget):
@@ -64,7 +13,7 @@ class MyWidget(QWidget):
         super(MyWidget, self).__init__()
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-        self.con = sqlite3.connect("coffee.sqlite")
+        self.con = sqlite3.connect("D:/MyPythonProjects/PythonProject2/data/coffee.sqlite")
         self.ui.pushButton.clicked.connect(self.add_edit_item)
         cur = self.con.cursor()
         result = cur.execute("SELECT * FROM coffe ORDER BY id").fetchall()
@@ -86,7 +35,7 @@ class MyWidget(QWidget):
 
     def add_item(self):
         if self.ui_window.textEdit.toPlainText():
-            self.ui_window.con = sqlite3.connect("coffee.sqlite")
+            self.ui_window.con = sqlite3.connect("D:/MyPythonProjects/PythonProject2/data/coffee.sqlite")
             cur = self.ui_window.con.cursor()
             try:
                 elements = list(map(lambda x: x.strip(), self.ui_window.textEdit.toPlainText().split(sep='_')))
@@ -119,7 +68,7 @@ class MyWidget(QWidget):
 
     def edit_item(self):
         if self.ui_window.textEdit.toPlainText():
-            self.ui_window.con = sqlite3.connect("coffee.sqlite")
+            self.ui_window.con = sqlite3.connect("D:/MyPythonProjects/PythonProject2/data/coffee.sqlite")
             cur = self.ui_window.con.cursor()
             try:
                 elements = list(map(lambda x: x.strip(), self.ui_window.textEdit.toPlainText().split(sep='_')))
@@ -130,7 +79,7 @@ class MyWidget(QWidget):
                 if len(elements) == 7 and elements[0] not in list(
                         map(lambda x: x[0], cur.execute('''SELECT id FROM coffe WHERE name LIKE "%"''').fetchall())):
                     raise BufferError
-                cur.execute('''DELETE FROM coffe WHERE id = ?''', (elements[0], ))
+                cur.execute('''DELETE FROM coffe WHERE id = ?''', (elements[0],))
                 cur.execute('''INSERT INTO coffe VALUES (?, ?, ?, ?, ?, ?, ?)''', elements)
                 self.ui_window.con.commit()
                 self.ui_window.con.close()
