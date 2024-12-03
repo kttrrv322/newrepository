@@ -1,105 +1,29 @@
 import sqlite3
 import sys
 import io
-from enum import UNIQUE
 
 from PyQt6 import uic
+from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtWidgets import QMainWindow, QTableWidgetItem
-
-template = '''<?xml version="1.0" encoding="UTF-8"?>
-<ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>968</width>
-    <height>688</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Form</string>
-  </property>
-  <widget class="QTableWidget" name="tableWidget">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>90</y>
-     <width>871</width>
-     <height>491</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QTextEdit" name="textEdit">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>50</y>
-     <width>871</width>
-     <height>41</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="pushButton">
-   <property name="geometry">
-    <rect>
-     <x>390</x>
-     <y>580</y>
-     <width>241</width>
-     <height>51</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Добавить</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>120</x>
-     <y>10</y>
-     <width>701</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Через пробел введите id, название сорта, степень обжарки, молотый/в зернах, описание вкуса, цена, объем упаковки</string>
-   </property>
-  </widget>
- </widget>
- <resources/>
- <connections/>
-</ui>
-'''
+from main_form import Ui_Form
+from addEditCoffeeForm import Ui_Dialog
+from PyQt6.QtWidgets import QWidget, QMainWindow, QTableWidgetItem
 
 
-class MyWidget(QMainWindow):
+class NewWidget(QWidget):
     def __init__(self):
-        super().__init__()
-        design = io.StringIO(template)
-        uic.loadUi(design, self)
+        super(NewWidget, self).__init__()
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
         self.con = sqlite3.connect("coffee.sqlite")
         self.pushButton.clicked.connect(self.add_item)
-        self.tableWidget.itemChanged.connect(self.item_changed)
-        self.modified = {}
-        self.titles = None
-        cur = self.con.cursor()
-        result = cur.execute("SELECT * FROM coffe").fetchall()
-        self.tableWidget.setRowCount(len(result))
-        self.tableWidget.setColumnCount(len(result[0]))
-        titles = [description[0] for description in cur.description]
-        self.tableWidget.setHorizontalHeaderLabels(titles)
-        for i, elem in enumerate(result):
-            for j, val in enumerate(elem):
-                self.tableWidget.setItem(i, j, QTableWidgetItem(str(val)))
+        self.pushButton_2.clicked.connect(self.edit_item)
 
     def add_item(self):
         if self.textEdit.toPlainText():
             cur = self.con.cursor()
             try:
-                elements = self.textEdit.toPlainText().split()
+                elements = list(map(lambda x: x.strip(), self.textEdit.toPlainText().split(sep='_')))
                 elements[-1] = int(elements[-1])
                 elements[-2] = int(elements[-2])
                 elements[0] = int(elements[0])
@@ -109,18 +33,123 @@ class MyWidget(QMainWindow):
                     raise BufferError
                 cur.execute('''INSERT INTO coffe VALUES (?, ?, ?, ?, ?, ?, ?)''', elements)
                 self.con.commit()
-                result = cur.execute("SELECT * FROM coffe").fetchall()
-                self.tableWidget.setRowCount(len(result))
-                self.tableWidget.setColumnCount(len(result[0]))
-                titles = [description[0] for description in cur.description]
-                self.tableWidget.setHorizontalHeaderLabels(titles)
-                for i, elem in enumerate(result):
-                    for j, val in enumerate(elem):
-                        self.tableWidget.setItem(i, j, QTableWidgetItem(str(val)))
             except BufferError:
                 self.textEdit.setText('Такой индекс уже существует')
             except Exception:
                 self.textEdit.setText('Ошибка ввода')
+
+    def edit_item(self):
+        if self.textEdit.toPlainText():
+            cur = self.con.cursor()
+            try:
+                elements = list(map(lambda x: x.strip(), self.textEdit.toPlainText().split(sep='_')))
+                elements[-1] = int(elements[-1])
+                elements[-2] = int(elements[-2])
+                elements[0] = int(elements[0])
+                elements = tuple(elements)
+                if len(elements) == 7 and elements[0] not in list(
+                        map(lambda x: x[0], cur.execute('''SELECT id FROM coffe WHERE name LIKE "%"''').fetchall())):
+                    raise BufferError
+                cur.execute('''DELETE FROM coffe WHERE id = ?''', (elements[0], ))
+                cur.execute('''INSERT INTO coffe VALUES (?, ?, ?, ?, ?, ?, ?)''', elements)
+                self.con.commit()
+            except BufferError:
+                self.textEdit.setText('Такого индекса не существует')
+            except Exception:
+                self.textEdit.setText('Ошибка ввода')
+
+
+class MyWidget(QWidget):
+    def __init__(self):
+        super(MyWidget, self).__init__()
+        self.ui = Ui_Form()
+        self.ui.setupUi(self)
+        self.con = sqlite3.connect("coffee.sqlite")
+        self.ui.pushButton.clicked.connect(self.add_edit_item)
+        cur = self.con.cursor()
+        result = cur.execute("SELECT * FROM coffe ORDER BY id").fetchall()
+        self.ui.tableWidget.setRowCount(len(result))
+        self.ui.tableWidget.setColumnCount(len(result[0]))
+        titles = [description[0] for description in cur.description]
+        self.ui.tableWidget.setHorizontalHeaderLabels(titles)
+        for i, elem in enumerate(result):
+            for j, val in enumerate(elem):
+                self.ui.tableWidget.setItem(i, j, QTableWidgetItem(str(val)))
+
+    def add_edit_item(self):
+        self.new_window = QtWidgets.QDialog()
+        self.ui_window = Ui_Dialog()
+        self.ui_window.setupUi(self.new_window)
+        self.new_window.show()
+        self.ui_window.pushButton.clicked.connect(self.add_item)
+        self.ui_window.pushButton_2.clicked.connect(self.edit_item)
+
+    def add_item(self):
+        if self.ui_window.textEdit.toPlainText():
+            self.ui_window.con = sqlite3.connect("coffee.sqlite")
+            cur = self.ui_window.con.cursor()
+            try:
+                elements = list(map(lambda x: x.strip(), self.ui_window.textEdit.toPlainText().split(sep='_')))
+                elements[-1] = int(elements[-1])
+                elements[-2] = int(elements[-2])
+                elements[0] = int(elements[0])
+                elements = tuple(elements)
+                if len(elements) == 7 and elements[0] in list(
+                        map(lambda x: x[0], cur.execute('''SELECT id FROM coffe WHERE name LIKE "%"''').fetchall())):
+                    raise BufferError
+                cur.execute('''INSERT INTO coffe VALUES (?, ?, ?, ?, ?, ?, ?)''', elements)
+                self.ui_window.con.commit()
+                self.ui_window.con.close()
+                cur = self.con.cursor()
+                result = cur.execute("SELECT * FROM coffe ORDER BY id").fetchall()
+                self.ui.tableWidget.setRowCount(len(result))
+                self.ui.tableWidget.setColumnCount(len(result[0]))
+                titles = [description[0] for description in cur.description]
+                self.ui.tableWidget.setHorizontalHeaderLabels(titles)
+                for i, elem in enumerate(result):
+                    for j, val in enumerate(elem):
+                        self.ui.tableWidget.setItem(i, j, QTableWidgetItem(str(val)))
+            except BufferError:
+                self.ui_window.textEdit.setText('Такой индекс уже существует')
+            except Exception:
+                self.ui_window.textEdit.setText('Ошибка ввода')
+            self.new_window.close()
+        else:
+            self.ui_window.textEdit.setText('Введите данные')
+
+    def edit_item(self):
+        if self.ui_window.textEdit.toPlainText():
+            self.ui_window.con = sqlite3.connect("coffee.sqlite")
+            cur = self.ui_window.con.cursor()
+            try:
+                elements = list(map(lambda x: x.strip(), self.ui_window.textEdit.toPlainText().split(sep='_')))
+                elements[-1] = int(elements[-1])
+                elements[-2] = int(elements[-2])
+                elements[0] = int(elements[0])
+                elements = tuple(elements)
+                if len(elements) == 7 and elements[0] not in list(
+                        map(lambda x: x[0], cur.execute('''SELECT id FROM coffe WHERE name LIKE "%"''').fetchall())):
+                    raise BufferError
+                cur.execute('''DELETE FROM coffe WHERE id = ?''', (elements[0], ))
+                cur.execute('''INSERT INTO coffe VALUES (?, ?, ?, ?, ?, ?, ?)''', elements)
+                self.ui_window.con.commit()
+                self.ui_window.con.close()
+                cur = self.con.cursor()
+                result = cur.execute("SELECT * FROM coffe ORDER BY id").fetchall()
+                self.ui.tableWidget.setRowCount(len(result))
+                self.ui.tableWidget.setColumnCount(len(result[0]))
+                titles = [description[0] for description in cur.description]
+                self.ui.tableWidget.setHorizontalHeaderLabels(titles)
+                for i, elem in enumerate(result):
+                    for j, val in enumerate(elem):
+                        self.ui.tableWidget.setItem(i, j, QTableWidgetItem(str(val)))
+            except BufferError:
+                self.ui_window.textEdit.setText('Такого индекса не существует')
+            except Exception:
+                self.ui_window.textEdit.setText('Ошибка ввода')
+            self.new_window.close()
+        else:
+            self.ui_window.textEdit.setText('Введите данные')
 
 
 if __name__ == '__main__':

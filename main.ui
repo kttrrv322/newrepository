@@ -23,16 +23,6 @@
     </rect>
    </property>
   </widget>
-  <widget class="QTextEdit" name="textEdit">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>50</y>
-     <width>871</width>
-     <height>41</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
@@ -43,20 +33,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Добавить</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>120</x>
-     <y>10</y>
-     <width>701</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Через пробел введите id, название сорта, степень обжарки, молотый/в зернах, описание вкуса, цена, объем упаковки</string>
+    <string>Добавить/изменить</string>
    </property>
   </widget>
  </widget>
